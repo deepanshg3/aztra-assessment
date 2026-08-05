@@ -32,3 +32,9 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Generated data
+data/cleaned/
+
+# OpenCode credentials
+opencode.json

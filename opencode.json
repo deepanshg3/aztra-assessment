@@ -6,7 +6,7 @@
       "name": "Cadra",
       "options": {
         "baseURL": "https://proxy.cadra.info/v1",
-        "apiKey": "PASTE_CADRA_TOKEN_HERE"
+        "apiKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3ZDgxODliNS00NzcyLTRkMDItOWZjZS05NzQ0MjdjMWQwYTUiLCJ1c2VyX2lkIjoiN2Q4MTg5YjUtNDc3Mi00ZDAyLTlmY2UtOTc0NDI3YzFkMGE1IiwiY29kaW5nX2Fzc2Vzc21lbnRfaWQiOiI3OGZlZDczMC0xY2QyLTQ5M2EtODhlMi00MDdmODhjZjA4N2EiLCJ0eXBlIjoiZjEtY29kaW5nIiwiaWF0IjoxNzg1OTE3MjUzLCJleHAiOjE3ODYwOTAwNTN9.pnFuDuiRSZSbxNauoJKWVvHaIcF-Hjx5z2APw6emvRo"
       },
       "models": {
         "cadra": { "name": "Cadra", "tools": true }
