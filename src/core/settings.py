@@ -19,14 +19,14 @@ load_dotenv(dotenv_path=_DOT_ENV_PATH, override=False)
 class _Settings(_BaseModel):
     gemini_api_key: str = Field(..., min_length=1, repr=False)
     gemini_model: str = Field(default="gemini-2.0-flash-lite", min_length=1)
-    embedding_model: str = Field(default="text-embedding-004", min_length=1)
+    embedding_model: str = Field(default="gemini-embedding-001", min_length=1)
 
 
 def _load_settings() -> _Settings:
     raw = {
         "gemini_api_key": os.getenv("GEMINI_API_KEY", ""),
         "gemini_model": os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite"),
-        "embedding_model": os.getenv("EMBEDDING_MODEL", "text-embedding-004"),
+        "embedding_model": os.getenv("EMBEDDING_MODEL", "gemini-embedding-001"),
     }
     try:
         return _Settings(**raw)
