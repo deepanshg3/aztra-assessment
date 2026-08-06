@@ -38,3 +38,9 @@ data/cleaned/
 
 # OpenCode credentials
 opencode.json
+
+# Generated database
+data/database/
+*.db
+*.sqlite
+*.sqlite3
