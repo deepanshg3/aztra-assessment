@@ -1,15 +1,17 @@
 """SQL query planner that generates SQL from a user question.
 
 This module is responsible ONLY for generating SQL. It does not execute,
-validate, or modify the generated query.
+or modify the generated query.
 """
 
 from __future__ import annotations
 
+from src.core.input_validation import validate_question
 from src.core.logger import get_logger
 from src.llm.client import invoke as llm_invoke
 from src.sql.database_summary import DATABASE_SUMMARY
 from src.sql.prompts import SQL_PLANNING_PROMPT
+from src.sql.validator import validate as validate_sql
 
 logger = get_logger(__name__)
 
@@ -66,11 +68,15 @@ def plan(question: str) -> str:
     Raises:
         RuntimeError: If the LLM call fails after all retries.
     """
-    logger.info("SQL generation started", extra={"question": question})
+    question = validate_question(question)
+
+    logger.info("SQL generation started", extra={"q_len": len(question)})
 
     prompt = _build_prompt(question)
     raw_sql = llm_invoke(prompt)
     sql = _clean_sql(raw_sql)
 
-    logger.info("SQL generated successfully", extra={"sql": sql})
+    sql = validate_sql(sql)
+
+    logger.info("SQL generated successfully", extra={"sql_len": len(sql)})
     return sql

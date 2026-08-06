@@ -115,7 +115,7 @@ def retrieve(question: str) -> list[dict[str, object]]:
     Raises:
         RuntimeError: If the vector database or collection does not exist.
     """
-    logger.info("Semantic retrieval started", extra={"question": question})
+    logger.info("Semantic retrieval started", extra={"q_len": len(question)})
 
     embedded_query = embed(question)
     client = _open_chroma_client()

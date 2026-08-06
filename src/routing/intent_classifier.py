@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from src.core.input_validation import validate_question
 from src.core.logger import get_logger
 from src.llm.client import invoke as llm_invoke
 from src.llm.prompts import INTENT_CLASSIFICATION_PROMPT
@@ -44,7 +45,7 @@ def _validate_response(data: dict[str, Any]) -> IntentClassification:
     except Exception as exc:
         logger.error(
             "Intent validation failed",
-            extra={"parsed_data": data, "error": str(exc)},
+            extra={"error": str(exc)},
         )
         raise
 
@@ -62,22 +63,24 @@ def classify(question: str) -> IntentClassification:
         RuntimeError: If the LLM call fails after retries.
         ValueError: If the response cannot be parsed or validated.
     """
-    logger.info("Classifying intent", extra={"question": question})
+    question = validate_question(question)
+
+    logger.info("Classifying intent", extra={"q_len": len(question)})
 
     prompt = _build_prompt(question)
     raw_response = llm_invoke(prompt)
 
-    logger.debug("Raw LLM response received", extra={"raw": raw_response})
+    logger.debug("Raw LLM response received", extra={"resp_len": len(raw_response)})
 
     try:
         parsed = _parse_json_response(raw_response)
     except (json.JSONDecodeError, Exception) as exc:
         logger.error(
             "Failed to parse LLM response as JSON",
-            extra={"raw": raw_response, "error": str(exc)},
+            extra={"resp_len": len(raw_response), "error": str(exc)},
         )
         raise ValueError(
-            f"LLM returned malformed JSON. Response: {raw_response!r}"
+            "LLM returned malformed JSON."
         ) from exc
 
     classification = _validate_response(parsed)

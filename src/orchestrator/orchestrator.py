@@ -7,6 +7,7 @@ collects intermediate results, and returns a validated ``AssessmentResponse``.
 
 from __future__ import annotations
 
+from src.core.input_validation import validate_question
 from src.core.logger import get_logger
 from src.rag.retriever import retrieve
 from src.response_generator.generator import generate
@@ -54,7 +55,9 @@ class AssessmentOrchestrator:
         Returns:
             A validated ``AssessmentResponse`` instance.
         """
-        logger.info("Processing question", extra={"question": question})
+        question = validate_question(question)
+
+        logger.info("Processing question", extra={"q_len": len(question)})
 
         intent_result: IntentClassification = classify(question)
         intent: str = intent_result.intent

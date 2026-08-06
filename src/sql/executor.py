@@ -62,7 +62,7 @@ def execute(sql: str) -> list[dict[str, object]]:
     """
     safe_sql = validate(sql)
 
-    logger.info("SQL execution started", extra={"sql": safe_sql})
+    logger.info("SQL execution started", extra={"sql_len": len(safe_sql)})
 
     conn = _connect()
     try:

@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from src.core.input_validation import validate_question
 from src.core.logger import get_logger
 from src.llm.client import invoke as llm_invoke
 from src.response_generator.prompts import RESPONSE_GENERATION_PROMPT
@@ -103,8 +104,25 @@ def _parse_json_response(raw: str) -> dict[str, Any]:
         return json.loads(text)
     except json.JSONDecodeError as exc:
         raise ValueError(
-            f"Response generator returned malformed JSON. Response: {raw!r}"
+            "Response generator returned malformed JSON."
         ) from exc
+
+
+def _validate_parsed_response(data: dict[str, Any]) -> None:
+    """Validate that all required fields are present in the parsed response.
+
+    Args:
+        data: The parsed JSON dictionary.
+
+    Raises:
+        ValueError: If required fields are missing.
+    """
+    if "answer" not in data or not isinstance(data.get("answer"), str) or not data["answer"].strip():
+        raise ValueError("Response generator output is missing a valid 'answer' field.")
+    if "citations" not in data or not isinstance(data.get("citations"), list):
+        raise ValueError("Response generator output is missing a valid 'citations' field.")
+    if "confidence" not in data:
+        raise ValueError("Response generator output is missing the 'confidence' field.")
 
 
 def generate(
@@ -130,6 +148,8 @@ def generate(
         RuntimeError: If the LLM call fails after all retries.
         ValueError: If the LLM response cannot be parsed or validated.
     """
+    question = validate_question(question)
+
     logger.info(
         "Generating final response",
         extra={"intent": intent, "status": status},
@@ -138,7 +158,7 @@ def generate(
     prompt = _build_prompt(question, intent, sql_rows, documents)
     raw_response = llm_invoke(prompt)
 
-    logger.debug("Raw response generator output received", extra={"raw": raw_response})
+    logger.debug("Raw response generator output received", extra={"resp_len": len(raw_response)})
 
     try:
         parsed = _parse_json_response(raw_response)
@@ -148,6 +168,8 @@ def generate(
             extra={"error": str(exc)},
         )
         raise
+
+    _validate_parsed_response(parsed)
 
     answer: str = parsed.get("answer", "")
     citations: list[str] = [

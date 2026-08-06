@@ -27,9 +27,15 @@ _FORBIDDEN_KEYWORDS: Final[set[str]] = {
     "REINDEX",
     "TRUNCATE",
     "REPLACE",
+    "LOAD_EXTENSION",
+    "UNION",
+    "EXPLAIN",
 }
 
 _KEYWORD_PATTERN: str = r"\b(" + "|".join(_FORBIDDEN_KEYWORDS) + r")\b"
+
+_RE_SQL_COMMENT_LINE: re.Pattern = re.compile(r"--")
+_RE_SQL_COMMENT_BLOCK: re.Pattern = re.compile(r"/\*.*?\*/", re.DOTALL)
 
 _RE_MULTI_STATEMENT: re.Pattern = re.compile(r";\s*(?:\n|$)", re.MULTILINE)
 
@@ -47,6 +53,22 @@ def _has_forbidden_keywords(sql: str) -> bool:
         True if a forbidden keyword is found.
     """
     return bool(re.search(_KEYWORD_PATTERN, sql, re.IGNORECASE))
+
+
+def _has_sql_comments(sql: str) -> bool:
+    """Check whether the SQL contains line or block comments.
+
+    Args:
+        sql: The SQL string to inspect.
+
+    Returns:
+        True if SQL comments are found.
+    """
+    if _RE_SQL_COMMENT_LINE.search(sql):
+        return True
+    if _RE_SQL_COMMENT_BLOCK.search(sql):
+        return True
+    return False
 
 
 def _has_multiple_statements(sql: str) -> bool:
@@ -95,9 +117,14 @@ def validate(sql: str) -> str:
             f"Query must begin with SELECT. Got: {sql[:80]!r}"
         )
 
+    if _has_sql_comments(sql):
+        raise ValueError(
+            "SQL comments are not allowed."
+        )
+
     if _has_forbidden_keywords(sql):
         raise ValueError(
-            f"Only read-only SELECT queries are allowed."
+            "Only read-only SELECT queries are allowed."
         )
 
     if _has_multiple_statements(sql):
