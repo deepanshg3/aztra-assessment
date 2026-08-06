@@ -1,0 +1,1 @@
+"""Structured SQL retrieval layer for planning, validating, and executing queries."""
