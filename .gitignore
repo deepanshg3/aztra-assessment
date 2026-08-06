@@ -33,14 +33,5 @@ dist/
 build/
 *.egg-info/
 
-# Generated data
-data/cleaned/
-
-# OpenCode credentials
+# OpenCode
 opencode.json
-
-# Generated database
-data/database/
-*.db
-*.sqlite
-*.sqlite3
