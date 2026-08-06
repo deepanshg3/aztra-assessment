@@ -30,22 +30,28 @@ def _init_model() -> ChatGoogleGenerativeAI:
     reuse the same client instance.
     """
     global _model
+
     if _model is not None:
         return _model
 
     logger.info(
-        "Initialising Gemini model", extra={"model": settings.gemini_model}
+        "Initialising Gemini model",
+        extra={"model": settings.gemini_model},
     )
+
     _model = ChatGoogleGenerativeAI(
         model=settings.gemini_model,
         google_api_key=settings.gemini_api_key,
+        temperature=0,
     )
+
     logger.info("Gemini model initialised successfully")
+
     return _model
 
 
 def _is_transient_failure(exception: Exception) -> bool:
-    """Return ``True`` if *exception* is likely a transient network/API error."""
+    """Return True if the exception is likely a transient network/API failure."""
     import requests
     from google.api_core import exceptions as google_exceptions
 
@@ -58,7 +64,37 @@ def _is_transient_failure(exception: Exception) -> bool:
         requests.exceptions.ConnectionError,
         requests.exceptions.Timeout,
     )
+
     return isinstance(exception, transient_types)
+
+
+def _extract_text(content: Any) -> str:
+    """Normalize LangChain response content into plain text."""
+
+    if content is None:
+        return ""
+
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        parts: list[str] = []
+
+        for block in content:
+            if isinstance(block, dict):
+                if block.get("type") == "text":
+                    text = block.get("text", "")
+                    if text:
+                        parts.append(text)
+
+            elif hasattr(block, "text"):
+                text = getattr(block, "text", "")
+                if text:
+                    parts.append(text)
+
+        return "\n".join(parts).strip()
+
+    return str(content).strip()
 
 
 def _invoke_with_retry(model: ChatGoogleGenerativeAI, prompt: str) -> str:
@@ -67,29 +103,53 @@ def _invoke_with_retry(model: ChatGoogleGenerativeAI, prompt: str) -> str:
 
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
-            logger.debug("LLM request", extra={"attempt": attempt})
+            logger.debug(
+                "LLM request",
+                extra={"attempt": attempt},
+            )
+
             response = model.invoke(prompt)
-            content: Any = response.content
-            text = str(content) if content is not None else ""
-            logger.debug("LLM response received", extra={"length": len(text)})
+
+            text = _extract_text(response.content)
+
+            logger.debug(
+                "LLM response received",
+                extra={"length": len(text)},
+            )
+
             return text
+
         except Exception as exc:
             last_exception = exc
+
             if not _is_transient_failure(exc):
-                logger.error("Non-transient LLM failure", extra={"error": str(exc)})
+                logger.error(
+                    "Non-transient LLM failure",
+                    extra={"error": str(exc)},
+                )
                 raise
 
             if attempt < _MAX_RETRIES:
                 delay = _BASE_DELAY_S * (_BACKOFF_FACTOR ** (attempt - 1))
+
                 logger.warning(
                     "Transient LLM failure, retrying",
-                    extra={"attempt": attempt, "delay_s": delay, "error": str(exc)},
+                    extra={
+                        "attempt": attempt,
+                        "delay_s": delay,
+                        "error": str(exc),
+                    },
                 )
+
                 time.sleep(delay)
+
             else:
                 logger.error(
                     "LLM call failed after all retries",
-                    extra={"attempts": _MAX_RETRIES, "error": str(exc)},
+                    extra={
+                        "attempts": _MAX_RETRIES,
+                        "error": str(exc),
+                    },
                 )
 
     raise RuntimeError(
@@ -99,16 +159,17 @@ def _invoke_with_retry(model: ChatGoogleGenerativeAI, prompt: str) -> str:
 
 
 def invoke(prompt: str) -> str:
-    """Send a prompt to the LLM and return the text response.
+    """Send a prompt to the LLM and return the response as plain text.
 
     Args:
-        prompt: The full prompt string to send to the model.
+        prompt: The full prompt to send to the model.
 
     Returns:
-        The model's response as plain text.
+        The model response as normalized plain text.
 
     Raises:
-        RuntimeError: If the call fails after all retries.
+        RuntimeError:
+            If the model call fails after all retry attempts.
     """
     model = _init_model()
     return _invoke_with_retry(model, prompt)

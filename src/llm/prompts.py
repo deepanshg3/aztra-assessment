@@ -99,9 +99,9 @@ Return ONLY valid JSON.
 
 The JSON must contain exactly one field.
 
-{
+{{
     "intent": "WHAT"
-}
+}}
 
 Allowed values are ONLY:
 
