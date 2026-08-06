@@ -1,0 +1,1 @@
+"""Response generator package for producing the final validated answer from evidence."""
